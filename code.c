@@ -493,6 +493,7 @@ void signin(AuthenticationSystem *auth) {
         }
         
         // Gestion des tentatives de mot de passe
+        int attempt_in_iteration = 0;
         while (1) {
             printf("Mot de passe : ");
             scanf("%s", password);
@@ -517,33 +518,36 @@ void signin(AuthenticationSystem *auth) {
             } else {
                 // Mot de passe incorrect
                 auth->failed_attempts[user_index]++;
+                attempt_in_iteration++;
                 int failed_count = auth->failed_attempts[user_index];
                 
                 printf("\n%c Mot de passe incorrect.\n", 251);
                 
-                int lock_duration = 0;
-                if (failed_count == 3) {
-                    lock_duration = 5;
-                } else if (failed_count == 5) {
-                    lock_duration = 10;
-                } else if (failed_count == 6) {
-                    lock_duration = 15;
-                } else if (failed_count >= 7) {
-                    lock_duration = 20;
-                    printf("%c Compte bloque pendant 20 secondes...\n", 254);
-                    auth->lock_times[user_index] = time(NULL) + lock_duration;
+                // Vérifier si on a atteint 3 tentatives dans cette itération
+                if (attempt_in_iteration >= 3) {
+                    int lock_duration = 0;
                     
-                    // Attente du déblocage
-                    for (int i = lock_duration; i > 0; i--) {
-                        printf("Temps restant: %d secondes\r", i);
-                        Sleep(1000);
+                    if (failed_count == 3) {
+                        lock_duration = 5;
+                    } else if (failed_count >= 4 && failed_count <= 5) {
+                        lock_duration = 10;
+                    } else if (failed_count == 6) {
+                        lock_duration = 15;
+                    } else if (failed_count >= 7) {
+                        lock_duration = 20;
+                        printf("%c Compte bloque pendant 20 secondes...\n", 254);
+                        auth->lock_times[user_index] = time(NULL) + lock_duration;
+                        
+                        // Attente du déblocage
+                        for (int i = lock_duration; i > 0; i--) {
+                            printf("Temps restant: %d secondes\r", i);
+                            Sleep(1000);
+                        }
+                        printf("\n\n%c COMPTE BANNI DEFINITIVEMENT - Trop de tentatives echouees\n", 251);
+                        ban_user(auth, username);
+                        return;
                     }
-                    printf("\n\n%c COMPTE BANNI DEFINITIVEMENT - Trop de tentatives echouees\n", 251);
-                    ban_user(auth, username);
-                    return;
-                }
-                
-                if (failed_count >= 3) {
+                    
                     printf("%c Compte bloque pendant %d secondes...\n", 254, lock_duration);
                     auth->lock_times[user_index] = time(NULL) + lock_duration;
                     
@@ -553,6 +557,9 @@ void signin(AuthenticationSystem *auth) {
                         Sleep(1000);
                     }
                     printf("\nCompte debloque! Vous pouvez reessayer.\n");
+                    
+                    // Réinitialiser le compteur d'itération pour la prochaine série de 3 tentatives
+                    attempt_in_iteration = 0;
                 }
                 
                 continue;

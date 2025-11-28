@@ -527,13 +527,13 @@ void signin(AuthenticationSystem *auth) {
                 if (attempt_in_iteration >= 3) {
                     int lock_duration = 0;
                     
-                    if (failed_count == 3) {
+                    if (failed_count <= 3) {
                         lock_duration = 5;
-                    } else if (failed_count >= 4 && failed_count <= 5) {
+                    } else if (failed_count <= 6) {
                         lock_duration = 10;
-                    } else if (failed_count == 6) {
+                    } else if (failed_count <= 9) {
                         lock_duration = 15;
-                    } else if (failed_count >= 7) {
+                    } else if (failed_count >= 10) {
                         lock_duration = 20;
                         printf("%c Compte bloque pendant 20 secondes...\n", 254);
                         auth->lock_times[user_index] = time(NULL) + lock_duration;
@@ -543,7 +543,6 @@ void signin(AuthenticationSystem *auth) {
                             printf("Temps restant: %d secondes\r", i);
                             Sleep(1000);
                         }
-                        printf("\n\n%c COMPTE BANNI DEFINITIVEMENT - Trop de tentatives echouees\n", 251);
                         ban_user(auth, username);
                         return;
                     }
